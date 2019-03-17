@@ -24,7 +24,7 @@ innerProduct(const float* a, const float* b, std::size_t n)
   static constexpr std::size_t INTERVAL = sizeof(__m512) / sizeof(float);
   __m512 sumx16 = {0};
   for (std::size_t i = 0; i < n; i += INTERVAL) {
-    __m512 ax16 = _mm512_load_ps(&a[i]);
+    __m512 ax16 = _mm512_load_ps(&a[i]); // この結果をそれぞれ，sumx16のstd::unique_ptr<float[]> a(alignedAlloc<float>(N_ELEMENT * sizeof(float), ALIGN));を用意すれば良い
     __m512 bx16 = _mm512_load_ps(&b[i]);
 #ifdef __FMA__
     sumx16 = _mm512_fmadd_ps(ax16, bx16, sumx16);
@@ -50,9 +50,6 @@ static inline T* // memory size (byte), alignment (2^n)
 alignedAlloc(std::size_t nBytes, std::size_t alignment=alignof(T))
 {
     return reinterpret_cast<T*>(::operator new(nBytes, static_cast<std::align_val_t>(alignment)));
-    // posix_memalign
-    // void* p;
-    // return reinterpret_cast<T*>(::posix_memalign(&p, alignment, nBytes) == 0 ? p : nullptr);
 }
 
 int main() {
