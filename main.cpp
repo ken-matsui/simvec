@@ -20,7 +20,7 @@ int main() {
     std::cout << std::endl << std::endl;
 
     simvec::Simvec<float, VECSIZE> diff{};
-    diff = a - sum;
+    diff = a - sum - sum;
     for (const auto& d : diff) {
         std::cout << d << ", ";
     }
