@@ -10,9 +10,7 @@ int main() {
     simvec::Simvec<float, VECSIZE> c{};
     a[0] = b[0] = c[0] = 1;
     for (std::size_t i = 1; i < VECSIZE; ++i) {
-        a[i] = 0;
-        b[i] = 0;
-        c[i] = 0;
+        a[i] = b[i] = c[i] = 0;
     }
 
     simvec::Simvec<float, VECSIZE> sum{};
