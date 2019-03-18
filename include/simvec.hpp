@@ -1,8 +1,3 @@
-#include <cstdio>
-#include <cstdlib>
-#include <cmath>
-#include <cstddef>
-
 #include <iostream>
 #include <algorithm>
 #include <memory>
@@ -28,51 +23,35 @@ namespace simvec {
     template<typename ...Args>
     using first_enabled_t = typename first_enabled<Args...>::type;
 
-
-    // template <class L, class R>
-    // class Plus {
-    //     const L& l_; // 左辺値
-    //     const R& r_; // 右辺値
-    // public:
-    //     Plus(const L& l, const R& r)
-    //         : l_(l), r_(r) {}
-
-    //     float operator[](std::size_t i) const
-    //     {
-    //         return l_[i] + r_[i];
-    //     }
-    // };
-
-    // template <class L, class R>
-    // inline Plus<L, R> operator+(const L& l, const R& r)
-    // {
-    //     return Plus<L, R>(l, r);
-    // }
-
     // Simvec zeros();
     // Simvec ones();
 
     template<typename T>
-    static inline T* // memory size (byte), alignment (2^n)
-    alignedAlloc(std::size_t nBytes, std::size_t alignment=alignof(T))
-    {
-        return reinterpret_cast<T*>(::operator new(nBytes, static_cast<std::align_val_t>(alignment)));
+    inline T* // memory size (byte), alignment (2^n)
+    aligned_alloc(std::size_t size, std::size_t alignment=alignof(T)) {
+        return reinterpret_cast<T*>(::operator new(size, static_cast<std::align_val_t>(alignment)));
     }
 
 
     template <typename T, std::size_t Size>
-    struct Simvec {
+    class Simvec {
+        std::size_t INTERVAL = sizeof(value_type) / sizeof(T);
+        std::unique_ptr<T[]> p;
+
+    public:
         using value_type = first_enabled_t<
             std::enable_if<std::is_same_v<T, float>, __m512>,
             std::enable_if<std::is_same_v<T, double>, __m512d>,
             __m512i>;
 
-        std::size_t INTERVAL = sizeof(value_type) / sizeof(T);
-        std::unique_ptr<T[]> p;
+        Simvec(const Simvec&) = delete;
+        Simvec& operator=(const Simvec&) = delete;
+        Simvec(Simvec&&) = default;
+        Simvec& operator=(Simvec&&) = default;
         Simvec() {
-            p.reset(alignedAlloc<T>(Size * sizeof(T), alignof(value_type)));
+            p.reset(aligned_alloc<T>(Size * sizeof(T), alignof(value_type)));
         }
-        Simvec(std::unique_ptr<T[]>&& p_) {
+        explicit Simvec(std::unique_ptr<T[]>&& p_) {
             p = std::move(p_);
         }
 
@@ -80,23 +59,10 @@ namespace simvec {
         Simvec& operator=(const E& r)
         {
             for (std::size_t i = 0; i < Size; i += INTERVAL) {
-                _mm512_store_ps(&p[i], _mm512_load_ps(&r[i])); // ここも命令を抽象化
+                _mm512_store_ps(&p[i], r[i]); // TODO: ここも命令を抽象化
             }
             return *this;
         }
-
-
-        Simvec operator+(const Simvec& r) {
-            std::unique_ptr<T[]> sum(alignedAlloc<T>(Size * sizeof(T), alignof(value_type)));
-            for (std::size_t i = 0; i < Size; i += INTERVAL) {
-                value_type px16 = _mm512_load_ps(&p[i]);
-                value_type rx16 = _mm512_load_ps(&r[i]);
-                value_type sumx16 = _mm512_add_ps(px16, rx16);
-                _mm512_store_ps(&sum[i], sumx16);
-            }
-            return Simvec{ std::move(sum) };
-        }
-
         T& operator[](std::size_t i) const {
             return p[i];
         }
@@ -104,5 +70,43 @@ namespace simvec {
         constexpr std::size_t size() const noexcept {
             return Size;
         }
+
+        auto begin() const {
+            return p.get();
+        }
+        auto end() const {
+            return p.get() + Size;
+        }
     };
+
+
+    template <class L, class R>
+    class Plus {
+        const L& l_;
+        const R& r_;
+    public:
+        using value_type = typename L::value_type;
+
+        Plus(const L& l, const R& r)
+            : l_(l), r_(r) {}
+
+        value_type operator[](std::size_t i) const
+        {
+            value_type lx16;
+            if constexpr (std::is_same_v<value_type, decltype(l_[i])>) {
+                lx16 = l_[i];
+            }
+            else {
+                lx16 = _mm512_load_ps(&l_[i]);
+            }
+            value_type rx16 = _mm512_load_ps(&r_[i]);
+            return _mm512_add_ps(lx16, rx16);
+        }
+    };
+
+    template <class L, class R>
+    inline Plus<L, R> operator+(const L& l, const R& r)
+    {
+        return Plus<L, R>(l, r);
+    }
 }
