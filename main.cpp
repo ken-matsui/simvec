@@ -8,7 +8,7 @@ int main() {
     simvec::Simvec<float, VECSIZE> a{};
     simvec::Simvec<float, VECSIZE> b{};
     simvec::Simvec<float, VECSIZE> c{};
-    a[0] = b[0] = c[0] = 1;
+    a[0] = b[0] = c[0] = 1.23;
     for (std::size_t i = 1; i < VECSIZE; ++i) {
         a[i] = b[i] = c[i] = 0;
     }
