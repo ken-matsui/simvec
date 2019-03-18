@@ -2,7 +2,6 @@
 // sde -skx -- ./a.out
 #include "include/simvec.hpp"
 
-
 int main() {
     static constexpr std::size_t VECSIZE = 256;
     simvec::Simvec<float, VECSIZE> a{};
@@ -17,6 +16,13 @@ int main() {
     sum = a + b + c;
     for (const auto& s : sum) {
         std::cout << s << ", ";
+    }
+    std::cout << std::endl << std::endl;
+
+    simvec::Simvec<float, VECSIZE> diff{};
+    diff = a - sum;
+    for (const auto& d : diff) {
+        std::cout << d << ", ";
     }
     std::cout << std::endl;
 

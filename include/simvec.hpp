@@ -68,6 +68,18 @@ namespace simvec {
             return _mm512i_add_ps(__a, __b);
         }
     }
+    template <typename M, typename T, typename U>
+    M sub_ps(T __a, U __b) {
+        if constexpr (std::is_same_v<M, __m512>) {
+            return _mm512_sub_ps(__a, __b);
+        }
+        else if constexpr (std::is_same_v<M, __m512d>) {
+            return _mm512d_sub_ps(__a, __b);
+        }
+        else {
+            return _mm512i_sub_ps(__a, __b);
+        }
+    }
 
 
     template <typename T, std::size_t Size>
@@ -118,13 +130,13 @@ namespace simvec {
 
     // Expression Temlate (https://faithandbrave.hateblo.jp/entry/20081003/1223026720)
     template <class L, class R>
-    class Plus {
+    class Add {
         const L& l_;
         const R& r_;
     public:
         using value_type = typename L::value_type;
 
-        Plus(const L& l, const R& r)
+        Add(const L& l, const R& r)
             : l_(l), r_(r) {}
 
         value_type operator[](std::size_t i) const {
@@ -139,9 +151,35 @@ namespace simvec {
             return add_ps<value_type>(lx16, rx16);
         }
     };
+    template <class L, class R>
+    class Sub {
+        const L& l_;
+        const R& r_;
+    public:
+        using value_type = typename L::value_type;
+
+        Sub(const L& l, const R& r)
+            : l_(l), r_(r) {}
+
+        value_type operator[](std::size_t i) const {
+            value_type lx16;
+            if constexpr (std::is_same_v<value_type, decltype(l_[i])>) {
+                lx16 = l_[i];
+            }
+            else {
+                lx16 = load_ps<value_type>(&l_[i]);
+            }
+            value_type rx16 = load_ps<value_type>(&r_[i]);
+            return sub_ps<value_type>(lx16, rx16);
+        }
+    };
 
     template <class L, class R>
-    inline Plus<L, R> operator+(const L& l, const R& r) {
-        return Plus<L, R>(l, r);
+    inline Add<L, R> operator+(const L& l, const R& r) {
+        return Add<L, R>(l, r);
+    }
+    template <class L, class R>
+    inline Sub<L, R> operator-(const L& l, const R& r) {
+        return Sub<L, R>(l, r);
     }
 }
