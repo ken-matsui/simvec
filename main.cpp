@@ -7,9 +7,9 @@ int main() {
     simvec::Simvec<float, VECSIZE> a{};
     simvec::Simvec<float, VECSIZE> b{};
     simvec::Simvec<float, VECSIZE> c{};
-    a[0] = b[0] = c[0] = 1.23;
+    a[0] = b[0] = c[0] = 1.23f;
     for (std::size_t i = 1; i < VECSIZE; ++i) {
-        a[i] = b[i] = c[i] = 0;
+        a[i] = b[i] = c[i] = 0.0f;
     }
 
     simvec::Simvec<float, VECSIZE> sum{};
@@ -24,7 +24,14 @@ int main() {
     for (const auto& d : diff) {
         std::cout << d << ", ";
     }
-    std::cout << std::endl;
+    std::cout << std::endl << std::endl;
+
+    simvec::Simvec<float, VECSIZE> prod{};
+    prod[0] = 2.0f;
+    for (std::size_t i = 1; i < VECSIZE; ++i) {
+        prod[i] = 1.0f;
+    }
+    std::cout << inner_product(prod, diff) << std::endl;
 
     return 0;
 }

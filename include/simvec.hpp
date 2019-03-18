@@ -127,6 +127,27 @@ namespace simvec {
         }
     };
 
+    template <typename T, std::size_t Size, typename ValueType=typename Simvec<T, Size>::value_type>
+    T inner_product(const Simvec<T, Size>& a, const Simvec<T, Size>& b) {
+        static constexpr std::size_t INTERVAL = sizeof(ValueType) / sizeof(T);
+
+        ValueType sumx16 = {0};
+        for (std::size_t i = 0; i < Size; i += INTERVAL) {
+            ValueType ax16 = _mm512_load_ps(&a[i]);
+            ValueType bx16 = _mm512_load_ps(&b[i]);
+            sumx16 = _mm512_add_ps(sumx16, _mm512_mul_ps(ax16, bx16));
+        }
+
+        alignas(ValueType) T s[INTERVAL] = {0};
+        _mm512_store_ps(s, sumx16);
+
+        std::size_t offset = Size - Size % INTERVAL;
+        return std::inner_product(
+            a.begin() + offset, a.end(),
+            b.begin() + offset,
+            std::accumulate(std::begin(s), std::end(s), 0.0f));
+    }
+
 
     // Expression Temlate (https://faithandbrave.hateblo.jp/entry/20081003/1223026720)
     template <class L, class R>
