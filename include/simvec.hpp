@@ -32,6 +32,43 @@ namespace simvec {
         return reinterpret_cast<T*>(::operator new(size, static_cast<std::align_val_t>(alignment)));
     }
 
+    template <typename M, typename T>
+    M load_ps(T __a) {
+        if constexpr (std::is_same_v<M, __m512>) {
+            return _mm512_load_ps(__a);
+        }
+        else if constexpr (std::is_same_v<M, __m512d>) {
+            return _mm512d_load_ps(__a);
+        }
+        else {
+            return _mm512i_load_ps(__a);
+        }
+    }
+    template <typename M, typename T, typename U>
+    void store_ps(T __a, U __b) {
+        if constexpr (std::is_same_v<M, __m512>) {
+            _mm512_store_ps(__a, __b);
+        }
+        else if constexpr (std::is_same_v<M, __m512d>) {
+            _mm512d_store_ps(__a, __b);
+        }
+        else {
+            _mm512i_store_ps(__a, __b);
+        }
+    }
+    template <typename M, typename T, typename U>
+    M add_ps(T __a, U __b) {
+        if constexpr (std::is_same_v<M, __m512>) {
+            return _mm512_add_ps(__a, __b);
+        }
+        else if constexpr (std::is_same_v<M, __m512d>) {
+            return _mm512d_add_ps(__a, __b);
+        }
+        else {
+            return _mm512i_add_ps(__a, __b);
+        }
+    }
+
 
     template <typename T, std::size_t Size>
     class Simvec {
@@ -56,10 +93,9 @@ namespace simvec {
         }
 
         template <class E>
-        Simvec& operator=(const E& r)
-        {
+        Simvec& operator=(const E& r) {
             for (std::size_t i = 0; i < Size; i += INTERVAL) {
-                _mm512_store_ps(&p[i], r[i]); // TODO: ここも命令を抽象化
+                store_ps<value_type>(&p[i], r[i]);
             }
             return *this;
         }
@@ -80,6 +116,7 @@ namespace simvec {
     };
 
 
+    // Expression Temlate (https://faithandbrave.hateblo.jp/entry/20081003/1223026720)
     template <class L, class R>
     class Plus {
         const L& l_;
@@ -90,23 +127,21 @@ namespace simvec {
         Plus(const L& l, const R& r)
             : l_(l), r_(r) {}
 
-        value_type operator[](std::size_t i) const
-        {
+        value_type operator[](std::size_t i) const {
             value_type lx16;
             if constexpr (std::is_same_v<value_type, decltype(l_[i])>) {
                 lx16 = l_[i];
             }
             else {
-                lx16 = _mm512_load_ps(&l_[i]);
+                lx16 = load_ps<value_type>(&l_[i]);
             }
-            value_type rx16 = _mm512_load_ps(&r_[i]);
-            return _mm512_add_ps(lx16, rx16);
+            value_type rx16 = load_ps<value_type>(&r_[i]);
+            return add_ps<value_type>(lx16, rx16);
         }
     };
 
     template <class L, class R>
-    inline Plus<L, R> operator+(const L& l, const R& r)
-    {
+    inline Plus<L, R> operator+(const L& l, const R& r) {
         return Plus<L, R>(l, r);
     }
 }
