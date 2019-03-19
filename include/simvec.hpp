@@ -161,27 +161,34 @@ namespace simvec {
     }
 
 
+    template <typename L, typename Fn, typename R, typename ValueType=typename L::value_type>
+    ValueType apply(const L& l_, Fn fn, const R& r_, std::size_t i) {
+        ValueType lx16;
+        if constexpr (std::is_same_v<ValueType, decltype(l_[i])>) {
+            lx16 = l_[i];
+        }
+        else {
+            lx16 = load_ps<ValueType>(&l_[i]);
+        }
+        ValueType rx16 = load_ps<ValueType>(&r_[i]);
+        return fn(lx16, rx16);
+    }
+
     // Expression Temlate (https://faithandbrave.hateblo.jp/entry/20081003/1223026720)
     template <class L, class R>
     class Add {
         const L& l_;
         const R& r_;
     public:
-        using value_type = typename L::value_type;
-
         Add(const L& l, const R& r)
             : l_(l), r_(r) {}
 
+        using value_type = typename L::value_type;
         value_type operator[](std::size_t i) const {
-            value_type lx16;
-            if constexpr (std::is_same_v<value_type, decltype(l_[i])>) {
-                lx16 = l_[i];
-            }
-            else {
-                lx16 = load_ps<value_type>(&l_[i]);
-            }
-            value_type rx16 = load_ps<value_type>(&r_[i]);
-            return add_ps<value_type>(lx16, rx16);
+            auto fn = [](auto a, auto b) {
+                return add_ps<value_type>(a, b);
+            };
+            return apply(l_, fn, r_, i);
         }
     };
     template <class L, class R>
@@ -189,21 +196,15 @@ namespace simvec {
         const L& l_;
         const R& r_;
     public:
-        using value_type = typename L::value_type;
-
         Sub(const L& l, const R& r)
             : l_(l), r_(r) {}
 
+        using value_type = typename L::value_type;
         value_type operator[](std::size_t i) const {
-            value_type lx16;
-            if constexpr (std::is_same_v<value_type, decltype(l_[i])>) {
-                lx16 = l_[i];
-            }
-            else {
-                lx16 = load_ps<value_type>(&l_[i]);
-            }
-            value_type rx16 = load_ps<value_type>(&r_[i]);
-            return sub_ps<value_type>(lx16, rx16);
+            auto fn = [](auto a, auto b) {
+                return sub_ps<value_type>(a, b);
+            };
+            return apply(l_, fn, r_, i);
         }
     };
     template <class L, class R>
@@ -211,21 +212,15 @@ namespace simvec {
         const L& l_;
         const R& r_;
     public:
-        using value_type = typename L::value_type;
-
         Mul(const L& l, const R& r)
             : l_(l), r_(r) {}
 
+        using value_type = typename L::value_type;
         value_type operator[](std::size_t i) const {
-            value_type lx16;
-            if constexpr (std::is_same_v<value_type, decltype(l_[i])>) {
-                lx16 = l_[i];
-            }
-            else {
-                lx16 = load_ps<value_type>(&l_[i]);
-            }
-            value_type rx16 = load_ps<value_type>(&r_[i]);
-            return mul_ps<value_type>(lx16, rx16);
+            auto fn = [](auto a, auto b) {
+                return mul_ps<value_type>(a, b);
+            };
+            return apply(l_, fn, r_, i);
         }
     };
 
