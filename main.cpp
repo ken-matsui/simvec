@@ -26,6 +26,13 @@ int main() {
     }
     std::cout << std::endl << std::endl;
 
+    simvec::Simvec<float, VECSIZE> res{};
+    res = a * b - c;
+    for (const auto& r : res) {
+        std::cout << r << ", ";
+    }
+    std::cout << std::endl << std::endl;
+
     simvec::Simvec<float, VECSIZE> prod{};
     prod[0] = 2.0f;
     for (std::size_t i = 1; i < VECSIZE; ++i) {

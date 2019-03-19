@@ -80,6 +80,18 @@ namespace simvec {
             return _mm512i_sub_ps(__a, __b);
         }
     }
+    template <typename M, typename T, typename U>
+    M mul_ps(T __a, U __b) {
+        if constexpr (std::is_same_v<M, __m512>) {
+            return _mm512_mul_ps(__a, __b);
+        }
+        else if constexpr (std::is_same_v<M, __m512d>) {
+            return _mm512d_mul_ps(__a, __b);
+        }
+        else {
+            return _mm512i_mul_ps(__a, __b);
+        }
+    }
 
 
     template <typename T, std::size_t Size>
@@ -194,6 +206,28 @@ namespace simvec {
             return sub_ps<value_type>(lx16, rx16);
         }
     };
+    template <class L, class R>
+    class Mul {
+        const L& l_;
+        const R& r_;
+    public:
+        using value_type = typename L::value_type;
+
+        Mul(const L& l, const R& r)
+            : l_(l), r_(r) {}
+
+        value_type operator[](std::size_t i) const {
+            value_type lx16;
+            if constexpr (std::is_same_v<value_type, decltype(l_[i])>) {
+                lx16 = l_[i];
+            }
+            else {
+                lx16 = load_ps<value_type>(&l_[i]);
+            }
+            value_type rx16 = load_ps<value_type>(&r_[i]);
+            return mul_ps<value_type>(lx16, rx16);
+        }
+    };
 
     template <class L, class R>
     inline Add<L, R> operator+(const L& l, const R& r) {
@@ -202,5 +236,9 @@ namespace simvec {
     template <class L, class R>
     inline Sub<L, R> operator-(const L& l, const R& r) {
         return Sub<L, R>(l, r);
+    }
+    template <class L, class R>
+    inline Mul<L, R> operator*(const L& l, const R& r) {
+        return Mul<L, R>(l, r);
     }
 }
